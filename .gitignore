@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+*.so
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Environment variables / secrets
+*.env
+.env.*
+secrets.yaml
+secrets.yml
+
+# Snakemake
+.snakemake/
+*.snakemake.log
+
+# Checkpoints & output (generated files)
+checkpoints/
+output/
+
+# Audio files (potentially large)
+audio_files/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDEs & AI tools
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,32 @@
+# MongoDB
+mongo_uri: "mongodb://localhost:27017"
+db_name: "bird_pipeline"
+
+# MinIO
+minio_endpoint: "localhost:9000"
+minio_access_key: "minioadmin"
+minio_secret_key: "minioadmin"
+minio_secure: false
+audio_bucket: "bird-audio"
+logs_bucket: "request-logs"
+
+# Kafka
+kafka_broker: "localhost:9092"
+kafka_topic: "bird-observations"
+kafka_group_id: "bird-pipeline-consumer"
+
+# Audio
+audio_directory: "./audio_files"
+audio_location:
+  latitude: 45.815
+  longitude: 15.982
+
+# Taxonomy
+taxonomy_url: "https://aves.regoch.net/aves.json"
+
+# Classify
+classify_url: "https://aves.regoch.net/api/classify"
+
+# Report
+output_directory: "./output"
+species_filter: ""  # Opcijski fuzzy filter
