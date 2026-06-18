@@ -19,8 +19,22 @@ from thefuzz import fuzz
 import utils
 
 
+STUPCI = [
+    "scientific_name", "common_name", "family", "order", "taxon_key",
+    "classification_count", "avg_confidence", "max_confidence",
+]
+
+
 def generate_report(config, species_filter=""):
+    # "None" (iz praznog CLI parametra) tretiraj kao prazan filter
+    if species_filter in (None, "None"):
+        species_filter = ""
+
     db = utils.get_mongo_db(config)
+
+    output_dir = config.get("output_directory", "./output")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "bird_report.csv")
 
     # 1. Dohvati sve POZITIVNE audio klasifikacije ($gt = greater than, veće od 0)
     opazanja = list(db["observations"].find({
@@ -29,7 +43,9 @@ def generate_report(config, species_filter=""):
     }))
 
     if not opazanja:
-        print("Nema klasifikacija za izvještaj.")
+        # Svejedno napiši prazan CSV (sa zaglavljem) da izlaz uvijek postoji
+        pd.DataFrame(columns=STUPCI).to_csv(output_path, index=False, encoding="utf-8")
+        print(f"Nema klasifikacija — napisan prazan izvještaj: {output_path}")
         return
 
     print(f"Učitano {len(opazanja)} klasifikacija iz MongoDB-a.")
@@ -93,10 +109,7 @@ def generate_report(config, species_filter=""):
         izvjestaj = izvjestaj[maska]
         print(f"Nakon filtera ostalo {len(izvjestaj)} vrsta.")
 
-    # 8. Spremi u CSV (napravi output folder ako ne postoji)
-    output_dir = config.get("output_directory", "./output")
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "bird_report.csv")
+    # 8. Spremi u CSV (output folder i putanja su pripremljeni na početku)
     izvjestaj.to_csv(output_path, index=False, encoding="utf-8")
 
     print(f"\nIzvještaj spremljen: {output_path} ({len(izvjestaj)} vrsta).\n")

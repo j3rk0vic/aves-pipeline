@@ -53,7 +53,7 @@ rule generate_report:
     output:
         "output/bird_report.csv"
     params:
-        species_filter=config.get("species_filter", "")
+        species_filter=config.get("species_filter") or ""
     shell:
         'python scripts/04_generate_report.py --config config.yaml '
         '--species-filter "{params.species_filter}"'
