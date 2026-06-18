@@ -1,0 +1,56 @@
+name: Bird Pipeline
+
+# Ručno okidanje s opcionalnim fuzzy filterom.
+on:
+  workflow_dispatch:
+    inputs:
+      species_filter:
+        description: 'Fuzzy filter po nazivu vrste (opcionalno)'
+        required: false
+        default: ''
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout koda
+        uses: actions/checkout@v4
+
+      - name: Postavi Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instaliraj zavisnosti
+        run: pip install -r requirements.txt
+
+      # Podigni MongoDB, MinIO, Kafku i Zookeeper preko našeg docker-compose.yml
+      - name: Pokreni infrastrukturu
+        run: docker compose up -d
+
+      - name: Pričekaj da servisi budu spremni
+        run: |
+          echo "Čekam MongoDB (27017)..."
+          for i in $(seq 1 30); do nc -z localhost 27017 && break; sleep 2; done
+          echo "Čekam MinIO (9000)..."
+          for i in $(seq 1 30); do nc -z localhost 9000 && break; sleep 2; done
+          echo "Čekam Kafku (9092)..."
+          for i in $(seq 1 60); do nc -z localhost 9092 && break; sleep 2; done
+          echo "Dodatnih 15s da Kafka bude potpuno spremna..."
+          sleep 15
+
+      # Ubaci testne poruke na Kafku (inače je broker prazan u CI-ju)
+      - name: Napuni Kafku testnim porukama
+        run: python scripts/producer_test.py
+
+      # Pokreni cijeli pipeline kroz Snakemake (jedna ulazna točka)
+      - name: Pokreni pipeline
+        run: snakemake --cores 1 --config species_filter="${{ github.event.inputs.species_filter }}"
+
+      # Spremi generirani CSV kao artefakt koji se može preuzeti
+      - name: Spremi izvještaj kao artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: bird-report
+          path: output/bird_report.csv
