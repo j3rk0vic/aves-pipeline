@@ -2,10 +2,13 @@ import argparse
 import json
 from kafka import KafkaConsumer
 import utils
+import hashlib
+from pymongo import ASCENDING, errors
 
 def consume_kafka(config):
     db = utils.get_mongo_db(config)
     collection = db["observations"]
+    collection.create_index([("_hash", ASCENDING)], unique=True)
 
     consumer = KafkaConsumer(
         config["kafka_topic"],
@@ -20,11 +23,22 @@ def consume_kafka(config):
     for message in consumer:
         obs = message.value
         obs["source"] = "kafka"
+
+        tekst = json.dumps(obs, sort_keys=True)
+        obs["_hash"] = hashlib.md5(tekst.encode("utf-8")).hexdigest()
+
         opazanja.append(obs)
 
     if opazanja:
-        collection.insert_many(opazanja)
-        print(f"Spremljeno {len(opazanja)} opazanja iz Kafke u MongoDB.")
+        try:
+            result = collection.insert_many(opazanja, ordered=False)
+            spremljeno = len(result.inserted_ids)
+        except errors.BulkWriteError as bwe:
+            spremljeno = bwe.details.get("nInserted", 0)
+        
+        preskoceno = len(opazanja) - spremljeno
+
+        print(f"Spremljeno {spremljeno} novih, preskoceno {preskoceno} duplikata.")
     else:
         print("Nema novih poruka na Kafki.")
 
