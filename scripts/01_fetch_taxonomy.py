@@ -1,11 +1,3 @@
-"""
-Korak 1 — Dohvat taksonomskih podataka s https://aves.regoch.net/aves.json
-i pohrana u MongoDB kolekciju 'taxonomy'.
-
-Pokretanje:
-    python scripts/01_fetch_taxonomy.py --config config.yaml
-"""
-
 import argparse
 import sys
 import requests
@@ -18,10 +10,8 @@ def fetch_taxonomy(config: dict) -> None:
     db = get_mongo_db(config)
     collection = db["taxonomy"]
 
-    # Postavi unique index na 'key' (taxon_id) kako bi spriječili duplikate
     collection.create_index([("key", ASCENDING)], unique=True)
 
-    # Provjeri postoje li već podaci
     if collection.count_documents({}) > 0:
         print("Taksonomski podaci već postoje u MongoDB-u, preskačem dohvat.")
         return
@@ -44,7 +34,6 @@ def fetch_taxonomy(config: dict) -> None:
 
     print(f"Dohvaćeno {len(species_data)} zapisa. Upisujem u MongoDB...")
 
-    # Batch insert, preskoči duplikate zahvaljujući unique indexu
     batch_size = 500
     inserted_total = 0
 
@@ -54,7 +43,7 @@ def fetch_taxonomy(config: dict) -> None:
             result = collection.insert_many(batch, ordered=False)
             inserted_total += len(result.inserted_ids)
         except errors.BulkWriteError as bwe:
-            # Neki dokumenti su već postojali (duplikati) — to je ok
+            
             inserted_total += bwe.details.get("nInserted", 0)
 
     print(f"Uspješno uneseno {inserted_total} vrsta u kolekciju 'taxonomy'.")
